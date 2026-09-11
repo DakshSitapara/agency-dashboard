@@ -28,7 +28,7 @@ docker-compose.yml   Postgres + backend + frontend for one-command local dev
 Requirements: Docker + Docker Compose.
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/DakshSitapara/agency-dashboard
 cd agency-dashboard
 docker compose up --build
 ```
@@ -121,7 +121,7 @@ Set `VITE_API_URL=https://api.example.com` in Vercel, redeploy, and configure th
 
 For reliable HttpOnly cookies, use frontend and backend subdomains under the same parent domain, such as `app.example.com` and `api.example.com`; `SameSite=lax` then remains valid. If the hosts are unrelated sites, do not simply switch to `SameSite=None`: add CSRF protection first, then use `COOKIE_SAME_SITE=none` and `COOKIE_SECURE=true`.
 
-Production container entrypoints are also provided as `backend/Dockerfile.production` and `frontend/Dockerfile.production`. Build the frontend image with `--build-arg VITE_API_URL=https://api.example.com`. The backend container expects migrations to be run by the platform release command before starting `node dist/index.js`.
+Production container entrypoints are also provided as `backend/Dockerfile.production` and `frontend/Dockerfile.production`. Build the frontend image with `--build-arg VITE_API_URL=https://api.example.com`. The backend container expects migrations to be run by the platform release command before starting `node dist/src/index.js`.
 
 ## Database schema
 
@@ -164,7 +164,7 @@ Full definitions live in `backend/prisma/schema.prisma`; the committed migration
 ## Known limitations
 
 - No test suite is included; given the scope of this task, effort went into correctness of the access-control and real-time paths first. E2E and integration tests (Supertest + a test Postgres instance for the API, Playwright for the socket-driven UI) would be the next investment.
-- No rate limiting on `/auth/login` — a brute-force lockout (or a library like `express-rate-limit`) belongs here before production use.
+- Login attempts are rate-limited with `express-rate-limit`; a distributed store should be added if the backend is scaled across multiple instances.
 - File attachments on tasks are out of scope.
 - The overdue job runs every 5 minutes; for a real deployment this interval and the "isOverdue" semantics on task deletion/reassignment edge cases would need a closer look.
 - Notification types are limited to the two the spec calls for (assignment, moved-to-review); an overdue-task notification type exists in the schema but isn't wired up to avoid duplicate-notification churn from the 5-minute cron loop firing repeatedly.
