@@ -1,6 +1,6 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { NotificationBell } from './NotificationBell';
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { NotificationBell } from "./NotificationBell";
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -8,25 +8,49 @@ export function Layout() {
 
   async function handleLogout() {
     await logout();
-    navigate('/login');
+    navigate("/login");
   }
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <Link to="/" className="brand">
-          Agency Dashboard
+          <span className="brand-mark" aria-hidden="true">
+            A
+          </span>
+          <span>
+            <strong>Agency</strong>
+            <small>Operations hub</small>
+          </span>
         </Link>
-        <nav>
-          {(user?.role === 'ADMIN' || user?.role === 'PM') && <Link to="/projects">Projects</Link>}
-          <Link to="/tasks">Tasks</Link>
+        <nav className="main-nav" aria-label="Main navigation">
+          {(user?.role === "ADMIN" || user?.role === "PM") && (
+            <NavLink
+              to="/projects"
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              Projects
+            </NavLink>
+          )}
+          <NavLink
+            to="/tasks"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            Tasks
+          </NavLink>
         </nav>
         <div className="header-right">
           <NotificationBell />
-          <span className="user-chip">
-            {user?.name} <span className="role-tag">{user?.role}</span>
-          </span>
-          <button onClick={handleLogout} className="link-button">
+          <div className="user-chip">
+            <span className="avatar">
+              {user?.name?.charAt(0).toUpperCase()}
+            </span>
+            <span className="user-meta">
+              <strong>{user?.name}</strong>
+              <small>{user?.role}</small>
+            </span>
+          </div>
+          <button onClick={handleLogout} className="logout-button">
             Log out
           </button>
         </div>
