@@ -19,7 +19,9 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     depends_on:
       postgres:

@@ -79,7 +79,9 @@ Vercel's serverless functions do not hold a persistent WebSocket connection, so 
 
 ### Backend (Railway, Render, or Fly.io)
 
-Use a long-lived Node process with a managed PostgreSQL database. From the `backend` directory:
+Use a long-lived Node process with a managed PostgreSQL database. On Render, create a PostgreSQL database first and copy its **Internal Database URL** into the backend service's `DATABASE_URL`; never use `localhost:5432` for a separate hosted database. The repository's `backend/Dockerfile` installs OpenSSL for Prisma and runs migrations before starting the compiled API.
+
+For a native Node service, from the `backend` directory:
 
 ```bash
 npm ci
@@ -106,7 +108,7 @@ COOKIE_SECURE=true
 COOKIE_SAME_SITE=lax
 ```
 
-Run `npx prisma migrate deploy` as the platform's release/pre-deploy command, not on every application restart. Run `npm run seed` only once against a new database; never run it against production data because it clears all rows first.
+For Render's Docker service, the image runs `npx prisma migrate deploy` before `node dist/src/index.js`. For a native Node service, run `npx prisma migrate deploy` as the platform's release/pre-deploy command instead. Run `npm run seed` only once against a new database; never run it against production data because it clears all rows first.
 
 ### Frontend (Vercel)
 
@@ -121,7 +123,7 @@ Set `VITE_API_URL=https://api.example.com` in Vercel, redeploy, and configure th
 
 For reliable HttpOnly cookies, use frontend and backend subdomains under the same parent domain, such as `app.example.com` and `api.example.com`; `SameSite=lax` then remains valid. If the hosts are unrelated sites, do not simply switch to `SameSite=None`: add CSRF protection first, then use `COOKIE_SAME_SITE=none` and `COOKIE_SECURE=true`.
 
-Production container entrypoints are also provided as `backend/Dockerfile.production` and `frontend/Dockerfile.production`. Build the frontend image with `--build-arg VITE_API_URL=https://api.example.com`. The backend container expects migrations to be run by the platform release command before starting `node dist/src/index.js`.
+Production container entrypoints are also provided as `backend/Dockerfile.production` and `frontend/Dockerfile.production`. Build the frontend image with `--build-arg VITE_API_URL=https://api.example.com`. Both backend production Dockerfiles install OpenSSL for Prisma and start with `npx prisma migrate deploy && node dist/src/index.js`.
 
 ## Database schema
 
