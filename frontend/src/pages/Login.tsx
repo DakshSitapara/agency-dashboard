@@ -5,8 +5,8 @@ import { useAuth } from "../context/AuthContext";
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@agency.test");
-  const [password, setPassword] = useState("Password123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,7 +41,7 @@ export function Login() {
           Internal operations workspace
         </span>
       </div>
-      <form onSubmit={handleSubmit} className="login-card">
+      <form onSubmit={handleSubmit} className="login-card" autoComplete="on">
         <div className="login-card-header">
           <span className="brand-mark" aria-hidden="true">
             A
@@ -56,6 +56,7 @@ export function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             type="email"
+            autoComplete="username"
             required
           />
         </label>
@@ -65,6 +66,7 @@ export function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
+            autoComplete="current-password"
             required
           />
         </label>
@@ -72,10 +74,6 @@ export function Login() {
         <button type="submit" disabled={submitting}>
           {submitting ? "Signing in..." : "Sign in"}
         </button>
-        <p className="muted small">
-          Seeded accounts (password: Password123!): admin@agency.test,
-          pm1@agency.test, pm2@agency.test, dev1@agency.test … dev4@agency.test
-        </p>
       </form>
     </div>
   );

@@ -45,14 +45,17 @@ Then seed the database (one-time, from your host machine):
 docker compose exec backend npm run seed
 ```
 
-Open `http://localhost:5173` and sign in with any seeded account — password `Password123!` for all of them:
+Open `http://localhost:5173` and sign in with any seeded account. The password is `Password123!` for all accounts:
 
-| Role      | Email                               | Notes                                                         |
-| --------- | ----------------------------------- | ------------------------------------------------------------- |
-| Admin     | admin@agency.test                   | Sees everything                                               |
-| PM        | pm1@agency.test                     | Owns "Northwind Storefront Revamp" + "Bluepeak Client Portal" |
-| PM        | pm2@agency.test                     | Owns "Verde Health Patient App"                               |
-| Developer | dev1@agency.test … dev4@agency.test | Each has tasks assigned across the seeded projects            |
+| Role      | Email             | Password     | Notes                                                         |
+| --------- | ----------------- | ------------ | ------------------------------------------------------------- |
+| Admin     | admin@agency.test | Password123! | Sees everything                                               |
+| PM        | pm1@agency.test   | Password123! | Owns "Northwind Storefront Revamp" + "Bluepeak Client Portal" |
+| PM        | pm2@agency.test   | Password123! | Owns "Verde Health Patient App"                               |
+| Developer | dev1@agency.test  | Password123! | Has tasks assigned across the seeded projects                 |
+| Developer | dev2@agency.test  | Password123! | Has tasks assigned across the seeded projects                 |
+| Developer | dev3@agency.test  | Password123! | Has tasks assigned across the seeded projects                 |
+| Developer | dev4@agency.test  | Password123! | Has tasks assigned across the seeded projects                 |
 
 ## Local setup (without Docker)
 
