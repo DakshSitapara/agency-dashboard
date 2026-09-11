@@ -569,8 +569,9 @@ h3 {
 }
 .project-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
   gap: 0.85rem;
+  justify-content: start;
 }
 .project-card {
   display: flex;
