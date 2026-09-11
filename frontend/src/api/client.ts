@@ -1,6 +1,7 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { AuthUser } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // The access token lives only in memory (a module-level variable), never in
 // localStorage/sessionStorage - that would be readable by any injected script
@@ -28,16 +29,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshPromise: Promise<string | null> | null = null;
+interface RefreshSession {
+  accessToken: string;
+  user: AuthUser;
+}
 
-async function refreshAccessToken(): Promise<string | null> {
+let refreshPromise: Promise<RefreshSession | null> | null = null;
+
+async function refreshSession(): Promise<RefreshSession | null> {
   if (!refreshPromise) {
     refreshPromise = axios
       .post(`${API_URL}/api/auth/refresh`, {}, { withCredentials: true })
       .then((res) => {
-        const token = res.data.data.accessToken as string;
-        setAccessToken(token);
-        return token;
+        const session = res.data.data as RefreshSession;
+        setAccessToken(session.accessToken);
+        return session;
       })
       .catch(() => {
         setAccessToken(null);
@@ -50,11 +56,27 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise;
 }
 
+export async function refreshAccessToken(): Promise<string | null> {
+  const session = await refreshSession();
+  return session?.accessToken ?? null;
+}
+
+export async function restoreSession(): Promise<RefreshSession | null> {
+  return refreshSession();
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
-    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
-    if (error.response?.status === 401 && original && !original._retry && !original.url?.includes('/auth/')) {
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined;
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retry &&
+      !original.url?.includes("/auth/")
+    ) {
       original._retry = true;
       const newToken = await refreshAccessToken();
       if (newToken) {
@@ -64,7 +86,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
-export { refreshAccessToken, API_URL };
+export { API_URL };

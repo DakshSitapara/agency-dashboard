@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api, setAccessToken, refreshAccessToken } from '../api/client';
-import { AuthUser } from '../types';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { api, setAccessToken, restoreSession } from "../api/client";
+import { AuthUser } from "../types";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -20,39 +26,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // it, by design). Attempt a silent refresh using the HttpOnly cookie;
     // if it succeeds we're still logged in without ever touching localStorage.
     (async () => {
-      const token = await refreshAccessToken();
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          setUser(res.data.data);
-        } catch {
-          setAccessToken(null);
-        }
+      const session = await restoreSession();
+      if (session) {
+        setUser(session.user);
       }
       setLoading(false);
     })();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
+    const res = await api.post("/auth/login", { email, password });
     setAccessToken(res.data.data.accessToken);
     setUser(res.data.data.user);
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await api.post('/auth/logout');
+      await api.post("/auth/logout");
     } finally {
       setAccessToken(null);
       setUser(null);
     }
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
