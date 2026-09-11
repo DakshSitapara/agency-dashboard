@@ -1,0 +1,7 @@
+EXPLANATION (for submission form)
+
+The hardest problem was making the role-filtered real-time feed correct without duplicating access rules between REST and WebSocket layers. My solution: the server decides recipients at emit time, not the client. Every status change writes one TaskActivityLog row, then activityEmitter.ts fans it out to exactly four targets — the admin role-room, the owning PM's personal room, the assigned developer's personal room, and the specific project:{id} room (joinable only after re-checking ownership server-side). No client ever receives an event it shouldn't see, so there's nothing to accidentally leak by mis-filtering in React.
+
+The offline-catchup requirement forced a related decision: presence/rooms live in memory (fine, since they're just routing), but activity history never does. GET /api/activity always reads TaskActivityLog fresh from Postgres, scoped by the same role rules, and accepts an `after` timestamp for catchup — so a server restart or a different device reconnecting gets identical, correct results, capped at 20 events.
+
+One thing I'd do differently: I'd move notification/socket authorization into a single shared policy module consumed by both the REST middleware and the socket handshake, rather than two structurally similar (assertProjectAccess/assertTaskAccess) but separately-called implementations. They agree today, but keeping them provably in sync as the schema grows would be safer with one source of truth.

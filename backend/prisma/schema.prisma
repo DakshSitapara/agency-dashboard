@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PM
+  DEVELOPER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_MOVED_TO_REVIEW
+  TASK_OVERDUE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectsCreated Project[]         @relation("ProjectCreatedBy")
+  assignedTasks   Task[]            @relation("TaskAssignee")
+  activityLogs    TaskActivityLog[] @relation("ActivityActor")
+  notifications   Notification[]    @relation("NotificationRecipient")
+  refreshTokens   RefreshToken[]
+
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Client {
+  id        String    @id @default(uuid())
+  name      String
+  email     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  createdById String
+  createdBy   User     @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks         Task[]
+  activityLogs  TaskActivityLog[]
+
+  // A PM's "own projects" query filters on createdById - index it.
+  @@index([createdById])
+  @@index([clientId])
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedToId String?
+  assignedTo  User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  isOverdue   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  activityLogs  TaskActivityLog[]
+  notifications Notification[]
+
+  // Developer dashboard filters by assignedToId + status/priority/dueDate constantly.
+  @@index([projectId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([assignedToId, status])
+}
+
+model TaskActivityLog {
+  id         String     @id @default(uuid())
+  taskId     String
+  task       Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  // Denormalized so the feed can filter/paginate by project without joining through Task
+  // on every read - this table is read far more than it's written (live feed + catchup).
+  projectId  String
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation("ActivityActor", fields: [userId], references: [id])
+  fromStatus TaskStatus?
+  toStatus   TaskStatus
+  message    String
+  createdAt  DateTime   @default(now())
+
+  // Global admin feed and PM per-project feed both order by time within a project.
+  @@index([projectId, createdAt])
+  @@index([taskId])
+  @@index([userId])
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  userId        String
+  user          User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  message       String
+  relatedTaskId String?
+  relatedTask   Task?            @relation(fields: [relatedTaskId], references: [id], onDelete: SetNull)
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+
+  // Notification bell always queries "my unread, newest first".
+  @@index([userId, isRead, createdAt])
+}
